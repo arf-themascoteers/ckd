@@ -2,65 +2,76 @@ from torch.utils.data import Dataset
 import pandas as pd
 from sklearn import preprocessing
 from pandas.api.types import is_string_dtype, is_numeric_dtype
-import math
-import random
 import torch
 
 class ApolloDataset(Dataset):
     def __init__(self, is_train):
-        self.TRAIN_PORTION = 0.7
+        self.TRAIN_RATIO = 4
         self.NAN_TOLERANCE = 0.5
         self.is_train = is_train
         self.file_location = "kidney_disease.csv"
         csv_data = pd.read_csv("kidney_disease.csv")
         self.total = len(csv_data)
 
-        df_normalized = pd.DataFrame(csv_data)
-        df_normalized = df_normalized.drop(columns=["id"])
-        df_normalized = self._omit_empty_columns(df_normalized)
-        df_normalized = self._normalize(df_normalized)
+        df = pd.DataFrame(csv_data)
+        df = df.drop(columns=["id"])
+        df = self._omit_empty_columns(df)
+        df = self._normalize(df)
 
-        df_normalized.to_csv("out.csv")
+        df.to_csv("out.csv")
 
-        self.train_count = int(self.total * self.TRAIN_PORTION)
+        self.test_count = len(df) // self.TRAIN_RATIO
+        self.train_count = len(df) - self.test_count
         self.count = self.train_count
-        self.start_index = 0
-
         if self.is_train is False:
-            self.count = len(df_normalized) - self.train_count
-            self.start_index = self.train_count
+            self.count = self.test_count
 
-        self.dim = 0
-        for index, row in df_normalized.iterrows():
-            for cell in row:
-                if torch.is_tensor(cell):
-                    self.dim = self.dim + cell.shape[0]
-                    print(cell.shape[0])
-                else:
-                    self.dim = self.dim + 1
+        self.x_dim = 0
+        self.y_dim = 0
+        for index, row in df.iterrows():
+            last_cell = row[len(row)-1]
+            self.y_dim = self._length(last_cell)
+            for i in range(len(row)-1):
+                cell = row[i]
+                length = self._length(cell)
+                self.x_dim = self.x_dim + length
             break
 
-        self.tensors = torch.zeros((len(df_normalized), self.dim))
+        self.samples = torch.zeros((self.count, self.x_dim))
+        self.targets = torch.zeros(self.count, dtype=torch.long)
 
-        for index, row in df_normalized.iterrows():
+        current_index = 0
+        for index, row in df.iterrows():
+            mod = index % self.TRAIN_RATIO
+            if is_train and mod == 0:
+                continue
+            if is_train is False and mod != 0:
+                continue
+            last_cell = row[len(row)-1]
+            self.targets[current_index] = last_cell.argmax()
             start_index = 0
             end_index = 0
-            for cell in row:
+            for i in range(len(row)-1):
+                cell = row[i]
                 if torch.is_tensor(cell):
                     end_index = start_index + cell.shape[0]
                 else:
                     end_index = start_index + 1
-                self.tensors[index - 1, start_index:end_index] = cell
+                self.samples[current_index, start_index:end_index] = cell
                 start_index = end_index
+            current_index = current_index + 1
 
+    def _length(self, var):
+        if torch.is_tensor(var):
+            return var.shape[0]
+        else:
+            return 1
 
     def __len__(self):
-        return self.count
+        return self.targets.shape[0]
 
     def __getitem__(self, idx):
-        final_index = self.start_index+idx
-        col_size = self.tensors.shape[1]
-        return self.tensors[final_index,0:col_size-1], self.tensors[final_index, col_size-1]
+        return self.samples[idx], self.targets[idx]
 
     def _normalize(self, df):
         for col in df.columns:
@@ -121,5 +132,7 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     dl = DataLoader(d, batch_size=3)
     for x,y in dl:
-        print(x[0],y)
+        print(x,y)
+        print(x.shape)
+
 
