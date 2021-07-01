@@ -27,10 +27,19 @@ class ApolloDataset(Dataset):
             self.count = len(self.rows) - self.train_count
             self.start_index = self.train_count
 
-        df = df_normalized
-        for col in df_normalized.columns:
-            if df[col].isna().sum() != 0:
-                print(col)
+        self.dim = 0
+        for index, row in df_normalized.iterrows():
+            if index > 0:
+                for cell in row:
+                    if torch.is_tensor(cell):
+                        self.dim = self.dim + cell.shape[0]
+                        print(cell.shape)
+                    else:
+                        print(cell)
+                        self.dim = self.dim + 1
+                break
+        print(self.dim)
+
 
     def __len__(self):
         return self.count
@@ -68,8 +77,7 @@ class ApolloDataset(Dataset):
         for i in range(len(df[col])):
             cell = df[col][i]
             if cell != cell:
-                index = random.randint(0,len(dist)-1)
-                df.at[i, col] = dist[index]
+                df.at[i, col] = "unknown"
         return df
 
     def _normalize_numeric(self,df, col):
@@ -93,3 +101,4 @@ class ApolloDataset(Dataset):
 
 if __name__ == "__main__":
     d = ApolloDataset(is_train=True)
+
