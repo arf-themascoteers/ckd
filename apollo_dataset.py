@@ -16,36 +16,51 @@ class ApolloDataset(Dataset):
         self.total = len(csv_data)
 
         df_normalized = pd.DataFrame(csv_data)
+        df_normalized = df_normalized.drop(columns=["id"])
         df_normalized = self._omit_empty_columns(df_normalized)
         df_normalized = self._normalize(df_normalized)
-        self.rows = [row for index, row in df_normalized.iterrows()]
+
+        df_normalized.to_csv("out.csv")
+
         self.train_count = int(self.total * self.TRAIN_PORTION)
         self.count = self.train_count
         self.start_index = 0
 
         if self.is_train is False:
-            self.count = len(self.rows) - self.train_count
+            self.count = len(df_normalized) - self.train_count
             self.start_index = self.train_count
 
         self.dim = 0
         for index, row in df_normalized.iterrows():
-            if index > 0:
-                for cell in row:
-                    if torch.is_tensor(cell):
-                        self.dim = self.dim + cell.shape[0]
-                        print(cell.shape)
-                    else:
-                        print(cell)
-                        self.dim = self.dim + 1
-                break
-        print(self.dim)
+            for cell in row:
+                if torch.is_tensor(cell):
+                    self.dim = self.dim + cell.shape[0]
+                    print(cell.shape[0])
+                else:
+                    self.dim = self.dim + 1
+            break
+
+        self.tensors = torch.zeros((len(df_normalized), self.dim))
+
+        for index, row in df_normalized.iterrows():
+            start_index = 0
+            end_index = 0
+            for cell in row:
+                if torch.is_tensor(cell):
+                    end_index = start_index + cell.shape[0]
+                else:
+                    end_index = start_index + 1
+                self.tensors[index - 1, start_index:end_index] = cell
+                start_index = end_index
 
 
     def __len__(self):
         return self.count
 
     def __getitem__(self, idx):
-        return 1,1
+        final_index = self.start_index+idx
+        col_size = self.tensors.shape[1]
+        return self.tensors[final_index,0:col_size-1], self.tensors[final_index, col_size-1]
 
     def _normalize(self, df):
         for col in df.columns:
@@ -56,6 +71,7 @@ class ApolloDataset(Dataset):
         return df
 
     def _normalize_string(self,df, col):
+        df[col] = df[col].str.strip()
         self._fill_empty_string(df, col)
         uniques = list(df[col].unique())
         for i in range(len(df[col])):
@@ -102,4 +118,8 @@ class ApolloDataset(Dataset):
 
 if __name__ == "__main__":
     d = ApolloDataset(is_train=True)
+    from torch.utils.data import DataLoader
+    dl = DataLoader(d, batch_size=3)
+    for x,y in dl:
+        print(x[0],y)
 
