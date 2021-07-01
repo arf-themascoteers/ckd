@@ -4,6 +4,7 @@ from sklearn import preprocessing
 from pandas.api.types import is_string_dtype, is_numeric_dtype
 import torch
 
+
 class ApolloDataset(Dataset):
     def __init__(self, is_train):
         self.TRAIN_RATIO = 4
@@ -81,30 +82,27 @@ class ApolloDataset(Dataset):
                 df = self._normalize_string(df, col)
         return df
 
+    def _remove_nan(self, array):
+        index = -1
+        for i in range(len(array)):
+            element = array[i]
+            if element!= element:
+                index = i
+                break
+        if index != -1:
+            array.remove(array[index])
+
     def _normalize_string(self,df, col):
         df[col] = df[col].str.strip()
-        self._fill_empty_string(df, col)
         uniques = list(df[col].unique())
+        self._remove_nan(uniques)
+
         for i in range(len(df[col])):
             str = df[col][i]
             value = torch.zeros(len(uniques))
-            value[uniques.index(str)] = 1
+            if str in uniques:
+                value[uniques.index(str)] = 1
             df.at[i,col] = value
-        return df
-
-    def _fill_empty_string(self, df, col):
-        count_nans = df[col].isna().sum()
-        if count_nans == 0:
-            return df
-        dist = []
-        for cell in df[col]:
-            if cell == cell:
-                dist.append(cell)
-
-        for i in range(len(df[col])):
-            cell = df[col][i]
-            if cell != cell:
-                df.at[i, col] = "unknown"
         return df
 
     def _normalize_numeric(self,df, col):
@@ -132,7 +130,6 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     dl = DataLoader(d, batch_size=3)
     for x,y in dl:
-        print(x,y)
         print(x.shape)
 
 
