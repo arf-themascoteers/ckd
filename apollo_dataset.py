@@ -7,7 +7,7 @@ import torch
 
 class ApolloDataset(Dataset):
     def __init__(self, is_train):
-        self.TRAIN_RATIO = 4
+        self.TRAIN_RATIO = 2
         self.NAN_TOLERANCE = 0.5
         self.is_train = is_train
         self.file_location = "kidney_disease.csv"
@@ -22,6 +22,8 @@ class ApolloDataset(Dataset):
         df.to_csv("out.csv")
 
         self.test_count = len(df) // self.TRAIN_RATIO
+        if len(df) % self.TRAIN_RATIO != 0:
+            self.test_count += 1
         self.train_count = len(df) - self.test_count
         self.count = self.train_count
         if self.is_train is False:
