@@ -99,6 +99,7 @@ class ApolloDataset(Dataset):
                 omit_list.append(col)
         return df.drop(columns=omit_list)
 
+
 if __name__ == "__main__":
     d = ApolloDataset(is_train=True)
 
