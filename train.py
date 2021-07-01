@@ -5,7 +5,7 @@ import torch
 from apollo_dataset import ApolloDataset
 
 def train():
-    NUM_EPOCHS = 170
+    NUM_EPOCHS = 200
     BATCH_SIZE = 500
 
     dataset = ApolloDataset(is_train=True)
@@ -22,6 +22,7 @@ def train():
             loss.backward()
             optimizer.step()
             print(f'Epoch:{epoch + 1}, Loss:{loss.item():.4f}')
+    print("Training done. Machine saved to models/ckd.h5")
     torch.save(model.state_dict(), 'models/ckd.h5')
     return model
 

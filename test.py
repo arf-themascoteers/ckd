@@ -13,6 +13,7 @@ def test():
     model.eval()
     correct = 0
     total = 0
+    print(f"Test started ...")
     with torch.no_grad():
         for data, y_true in dataloader:
             y_pred = model(data)
