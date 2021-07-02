@@ -29,6 +29,7 @@ class ApolloDataset(Dataset):
         if self.is_train is False:
             self.count = self.test_count
 
+        self.input_map = list()
         self.x_dim = 0
         self.y_dim = 0
         for index, row in df.iterrows():
@@ -38,6 +39,11 @@ class ApolloDataset(Dataset):
                 cell = row[i]
                 length = self._length(cell)
                 self.x_dim = self.x_dim + length
+                if length == 1:
+                    self.input_map.append(df.columns[i])
+                else:
+                    for counter in range(length):
+                        self.input_map.append(df.columns[i]+str(counter))
             break
 
         self.samples = torch.zeros((self.count, self.x_dim))
@@ -63,6 +69,8 @@ class ApolloDataset(Dataset):
                 self.samples[current_index, start_index:end_index] = cell
                 start_index = end_index
             current_index = current_index + 1
+
+        print(self.input_map)
 
     def _length(self, var):
         if torch.is_tensor(var):
