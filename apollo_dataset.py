@@ -70,8 +70,6 @@ class ApolloDataset(Dataset):
                 start_index = end_index
             current_index = current_index + 1
 
-        print(self.input_map)
-
     def _length(self, var):
         if torch.is_tensor(var):
             return var.shape[0]
