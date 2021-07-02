@@ -10,6 +10,7 @@ class CKDNet(nn.Module):
             nn.Linear(self.input_size, 32),
             nn.LeakyReLU(0.2),
             nn.Linear(32,16),
+            nn.Dropout(p=0.2),
             nn.LeakyReLU(0.2),
             nn.Linear(16, 2)
 
