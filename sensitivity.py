@@ -29,7 +29,6 @@ def sensitivity():
     mu = x_grads.mean()
     sigma = torch.std(x_grads)
     x_grads = (x_grads - mu)/sigma
-    print(x_grads)
     x = list(range(0,len(x_grads)))
     fig, ax = plt.subplots()
     ax.scatter(x,x_grads.detach().numpy())
